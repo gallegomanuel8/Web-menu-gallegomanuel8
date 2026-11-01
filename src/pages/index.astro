@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import { apps } from '../data/apps';
 
 const title = 'Apps · Manuel Gallego';
@@ -25,10 +26,28 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 				{
 					apps.map((app) => (
 						<li class="card">
-							<h2>{app.name}</h2>
-							<p class="meta">
-								{[...app.platforms, app.tech].filter(Boolean).join(' · ')}
-							</p>
+							<div class="cover">
+								{app.screenshot ? (
+									<Image loading="eager" src={app.screenshot} alt={`Captura de ${app.name}`} widths={[400, 800]} sizes="(max-width: 640px) 100vw, 320px" />
+								) : app.icon ? (
+									<Image loading="eager" src={app.icon} alt="" class="cover-icon" width={112} height={112} />
+								) : (
+									<span class="cover-letter" aria-hidden="true">{app.name[0]}</span>
+								)}
+							</div>
+							<div class="title">
+								{app.icon ? (
+									<Image loading="eager" src={app.icon} alt="" class="icon" width={40} height={40} />
+								) : (
+									<span class="icon icon-letter" aria-hidden="true">{app.name[0]}</span>
+								)}
+								<div>
+									<h2>{app.name}</h2>
+									<p class="meta">
+										{[...app.platforms, app.tech].filter(Boolean).join(' · ')}
+									</p>
+								</div>
+							</div>
 							<p class="desc">{app.description}</p>
 							{app.status && <p class="status">{app.status}</p>}
 							<div class="actions">
@@ -60,6 +79,7 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		--muted: #71717a;
 		--card: #ffffff;
 		--border: #e4e4e7;
+		--cover: #f4f4f5;
 		--accent: #2563eb;
 		--accent-fg: #ffffff;
 		color-scheme: light dark;
@@ -71,6 +91,7 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 			--muted: #a1a1aa;
 			--card: #18181b;
 			--border: #27272a;
+			--cover: #111113;
 			--accent: #3b82f6;
 		}
 	}
@@ -107,7 +128,8 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 	.card {
 		display: flex;
 		flex-direction: column;
-		padding: 20px;
+		overflow: hidden;
+		padding: 0 20px 20px;
 		background: var(--card);
 		border: 1px solid var(--border);
 		border-radius: 12px;
@@ -116,8 +138,53 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		margin: 0;
 		font-size: 1.25rem;
 	}
+	.cover {
+		aspect-ratio: 16 / 10;
+		margin: 0 -20px 16px;
+		display: grid;
+		place-items: center;
+		background: var(--cover);
+		border-bottom: 1px solid var(--border);
+		overflow: hidden;
+	}
+	.cover img:not(.cover-icon) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: top left;
+	}
+	.cover-icon {
+		width: 112px;
+		height: 112px;
+		filter: drop-shadow(0 6px 16px rgb(0 0 0 / 0.25));
+	}
+	.cover-letter {
+		font-size: 4rem;
+		font-weight: 700;
+		color: var(--muted);
+	}
+	.title {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+	.icon {
+		width: 40px;
+		height: 40px;
+		flex: none;
+		border-radius: 10px;
+	}
+	.icon-letter {
+		display: grid;
+		place-items: center;
+		background: var(--cover);
+		border: 1px solid var(--border);
+		font-weight: 700;
+		color: var(--muted);
+	}
 	.meta {
-		margin: 2px 0 12px;
+		margin: 0;
 		font-size: 0.85rem;
 		color: var(--muted);
 	}

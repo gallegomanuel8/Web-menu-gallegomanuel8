@@ -1,3 +1,10 @@
+import type { ImageMetadata } from 'astro';
+import invertarioIcon from '../assets/apps/invertario-icon.svg';
+import invertarioShot from '../assets/apps/invertario-shot.png';
+import boostIcon from '../assets/apps/boost-icon.png';
+import boostShot from '../assets/apps/boost-shot.png';
+import wolIcon from '../assets/apps/wol-icon.png';
+
 export type AppLink = { label: string; href: string };
 
 export type App = {
@@ -9,6 +16,9 @@ export type App = {
 	/** Enlace principal: descarga (app nativa) o web desplegada. */
 	primary?: AppLink;
 	status?: string;
+	icon?: ImageMetadata;
+	/** Captura de pantalla; si no hay, la cabecera muestra el icono en grande. */
+	screenshot?: ImageMetadata;
 };
 
 const GH = 'https://github.com/gallegomanuel8';
@@ -22,6 +32,8 @@ export const apps: App[] = [
 		tech: 'TypeScript · Vite',
 		repo: `${GH}/Invertario`,
 		primary: { label: 'Abrir web', href: 'https://invertario.vercel.app' },
+		icon: invertarioIcon,
+		screenshot: invertarioShot,
 	},
 	{
 		name: 'Boost',
@@ -31,6 +43,8 @@ export const apps: App[] = [
 		tech: 'Rust',
 		repo: `${GH}/Boost`,
 		primary: { label: 'Descargar', href: `${GH}/Boost/releases/latest` },
+		icon: boostIcon,
+		screenshot: boostShot,
 	},
 	{
 		name: 'WoL Manu',
@@ -39,6 +53,7 @@ export const apps: App[] = [
 		platforms: ['macOS'],
 		tech: 'Swift · SwiftUI',
 		repo: `${GH}/WoL-Manu`,
+		icon: wolIcon,
 		status: 'Sin release aún · compilar desde el código',
 	},
 	{
