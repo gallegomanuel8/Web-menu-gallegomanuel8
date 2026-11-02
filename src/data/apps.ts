@@ -4,6 +4,8 @@ import invertarioShot from '../assets/apps/invertario-shot.png';
 import boostIcon from '../assets/apps/boost-icon.png';
 import boostShot from '../assets/apps/boost-shot.png';
 import wolIcon from '../assets/apps/wol-icon.png';
+import lorcaIcon from '../assets/apps/lorca-icon.png';
+import lorcaShot from '../assets/apps/lorca-shot.png';
 
 export type AppLink = { label: string; href: string };
 
@@ -53,15 +55,18 @@ export const apps: App[] = [
 		platforms: ['macOS'],
 		tech: 'Swift · SwiftUI',
 		repo: `${GH}/WoL-Manu`,
+		primary: { label: 'Descargar', href: `${GH}/WoL-Manu/releases/latest` },
 		icon: wolIcon,
-		status: 'Sin release aún · compilar desde el código',
 	},
 	{
 		name: 'Lorca',
-		description: 'Editor de texto vitaminado.',
-		platforms: [],
-		tech: '',
+		description:
+			'Editor de texto y código con autocompletado y diagnósticos vía LSP, búsqueda al estilo Notepad++, multicursor, pantalla dividida, vista previa de Markdown y sesión que nunca pierde lo escrito. Homenaje a García Lorca.',
+		platforms: ['macOS', 'Windows', 'Linux'],
+		tech: 'Rust · iced',
 		repo: `${GH}/Lorca`,
-		status: 'En desarrollo',
+		primary: { label: 'Descargar', href: `${GH}/Lorca/releases/latest` },
+		icon: lorcaIcon,
+		screenshot: lorcaShot,
 	},
 ];
