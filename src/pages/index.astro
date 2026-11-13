@@ -1,9 +1,30 @@
 ---
 import { Image } from 'astro:assets';
 import { apps } from '../data/apps';
+import { fetchLatestRelease, formatDate, formatSize } from '../lib/releases';
 
 const title = 'Apps · Manuel Gallego';
-const description = 'Aplicaciones que estoy desarrollando: descargas, webs y código fuente.';
+const description =
+	'Aplicaciones que estoy desarrollando. Las webs y juegos se abren en el navegador; las de escritorio se descargan siempre en su última versión. Todo el código es público.';
+
+const KIND_LABEL = { web: 'Web', game: 'Juego', desktop: 'Escritorio' } as const;
+
+// Release actual en el momento del build; el script del cliente la vuelve a pedir al cargar
+// la página, así que los enlaces apuntan a la última aunque no se redespliegue.
+const token = import.meta.env.GITHUB_TOKEN;
+const cards = await Promise.all(
+	apps.map(async (app) => {
+		const release = app.assets ? await fetchLatestRelease(app.repo, app.assets, token) : undefined;
+		const releasesUrl = `https://github.com/${app.repo}/releases/latest`;
+		const primary =
+			app.kind === 'web'
+				? { label: 'Abrir web', href: app.url! }
+				: app.kind === 'game'
+					? { label: 'Jugar ahora', href: app.url! }
+					: { label: 'Descargar', href: release?.url ?? releasesUrl };
+		return { app, release, releasesUrl, primary };
+	}),
+);
 ---
 
 <html lang="es">
@@ -24,17 +45,30 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 
 			<ul class="grid">
 				{
-					apps.map((app) => (
-						<li class="card">
-							<div class="cover">
+					cards.map(({ app, release, releasesUrl, primary }) => (
+						<li
+							class="card"
+							data-repo={app.kind === 'desktop' ? app.repo : undefined}
+							data-assets={app.assets ? JSON.stringify(app.assets) : undefined}
+						>
+							<a class="cover" href={primary.href} target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
 								{app.screenshot ? (
-									<Image loading="eager" src={app.screenshot} alt={`Captura de ${app.name}`} widths={[400, 800]} sizes="(max-width: 640px) 100vw, 320px" />
+									<Image
+										loading="eager"
+										src={app.screenshot}
+										alt=""
+										class:list={{ pixelated: app.pixelated }}
+										widths={[400, 800]}
+										sizes="(max-width: 640px) 100vw, 320px"
+									/>
 								) : app.icon ? (
 									<Image loading="eager" src={app.icon} alt="" class="cover-icon" width={112} height={112} />
 								) : (
-									<span class="cover-letter" aria-hidden="true">{app.name[0]}</span>
+									<span class="cover-letter">{app.name[0]}</span>
 								)}
-							</div>
+								<span class={`badge badge-${app.kind}`}>{KIND_LABEL[app.kind]}</span>
+							</a>
+
 							<div class="title">
 								{app.icon ? (
 									<Image loading="eager" src={app.icon} alt="" class="icon" width={40} height={40} />
@@ -43,23 +77,51 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 								)}
 								<div>
 									<h2>{app.name}</h2>
-									<p class="meta">
-										{[...app.platforms, app.tech].filter(Boolean).join(' · ')}
-									</p>
+									<p class="meta">{[...app.platforms, app.tech].filter(Boolean).join(' · ')}</p>
 								</div>
 							</div>
+
 							<p class="desc">{app.description}</p>
-							{app.status && <p class="status">{app.status}</p>}
-							<div class="actions">
-								{app.primary && (
-									<a class="btn primary" href={app.primary.href} target="_blank" rel="noopener">
-										{app.primary.label}
-									</a>
-								)}
-								<a class="btn" href={app.repo} target="_blank" rel="noopener">
-									Repositorio
-								</a>
-							</div>
+
+							{app.kind === 'desktop' && (
+								<p class="version" data-version>
+									{release ? `Última versión ${release.tag} · ${formatDate(release.date)}` : 'Última versión en GitHub'}
+								</p>
+							)}
+
+							<a class="btn primary" href={primary.href} target="_blank" rel="noopener" data-primary>
+								<span data-primary-label>{primary.label}</span>
+								<span class="btn-sub" data-primary-sub />
+							</a>
+
+							{app.kind === 'desktop' && (
+								<details class="others">
+									<summary>Todas las descargas</summary>
+									<ul data-downloads>
+										{release?.downloads.map((d) => (
+											<li>
+												<a href={d.url}>{d.label}</a>
+												<span>{formatSize(d.size)}</span>
+											</li>
+										))}
+										<li>
+											<a href={releasesUrl} target="_blank" rel="noopener">
+												Ver la release en GitHub
+											</a>
+										</li>
+									</ul>
+								</details>
+							)}
+
+							<a class="source" href={`https://github.com/${app.repo}`} target="_blank" rel="noopener">
+								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+									<path
+										fill="currentColor"
+										d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+									/>
+								</svg>
+								Código fuente
+							</a>
 						</li>
 					))
 				}
@@ -69,6 +131,83 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 				<a href="https://github.com/gallegomanuel8" target="_blank" rel="noopener">github.com/gallegomanuel8</a>
 			</footer>
 		</main>
+
+		<script>
+			import { fetchLatestRelease, formatDate, formatSize, type OS, type Release } from '../lib/releases';
+
+			function detectOS(): OS | undefined {
+				const ua = navigator.userAgent;
+				if (/iPhone|iPad|iPod|Android/i.test(ua)) return undefined;
+				// iPadOS se anuncia como Mac: distinguirlo por la pantalla táctil.
+				if (/Macintosh|Mac OS X/i.test(ua)) return navigator.maxTouchPoints > 1 ? undefined : 'macOS';
+				if (/Windows NT/i.test(ua)) return 'Windows';
+				if (/Linux|X11|CrOS/i.test(ua)) return 'Linux';
+				return undefined;
+			}
+
+			// La API de GitHub permite 60 peticiones/hora por IP sin token: cachear unos minutos.
+			const CACHE_MS = 10 * 60 * 1000;
+
+			async function latest(repo: string, assets: string): Promise<Release | undefined> {
+				const key = `release:${repo}`;
+				try {
+					const cached = JSON.parse(sessionStorage.getItem(key) ?? 'null');
+					if (cached && Date.now() - cached.at < CACHE_MS) return cached.release;
+				} catch {}
+				const release = await fetchLatestRelease(repo, JSON.parse(assets));
+				if (release) {
+					try {
+						sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), release }));
+					} catch {}
+				}
+				return release;
+			}
+
+			function render(card: HTMLElement, release: Release, os: OS | undefined) {
+				card.querySelector('[data-version]')!.textContent =
+					`Última versión ${release.tag} · ${formatDate(release.date)}`;
+
+				const primary = card.querySelector<HTMLAnchorElement>('[data-primary]')!;
+				const mine = os && release.downloads.find((d) => d.os === os);
+				if (mine) {
+					primary.href = mine.url;
+					primary.removeAttribute('target');
+					primary.querySelector('[data-primary-label]')!.textContent = `Descargar para ${os}`;
+					primary.querySelector('[data-primary-sub]')!.textContent = formatSize(mine.size);
+				} else {
+					primary.href = release.url;
+					const available = [...new Set(release.downloads.map((d) => d.os).filter(Boolean))];
+					if (os && available.length) {
+						primary.querySelector('[data-primary-label]')!.textContent = 'Ver descargas';
+						primary.querySelector('[data-primary-sub]')!.textContent = `solo ${available.join(', ')}`;
+					}
+				}
+				card.querySelectorAll<HTMLAnchorElement>('.cover').forEach((a) => (a.href = primary.href));
+
+				const list = card.querySelector('[data-downloads]')!;
+				const githubLink = list.lastElementChild!;
+				githubLink.querySelector('a')!.href = release.url;
+				list.replaceChildren(
+					...release.downloads.map((d) => {
+						const li = document.createElement('li');
+						const a = document.createElement('a');
+						a.href = d.url;
+						a.textContent = d.label;
+						const size = document.createElement('span');
+						size.textContent = formatSize(d.size);
+						li.append(a, size);
+						return li;
+					}),
+					githubLink,
+				);
+			}
+
+			const os = detectOS();
+			document.querySelectorAll<HTMLElement>('.card[data-repo]').forEach(async (card) => {
+				const release = await latest(card.dataset.repo!, card.dataset.assets!);
+				if (release) render(card, release, os);
+			});
+		</script>
 	</body>
 </html>
 
@@ -82,6 +221,9 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		--cover: #f4f4f5;
 		--accent: #2563eb;
 		--accent-fg: #ffffff;
+		--web: #0891b2;
+		--game: #c026d3;
+		--desktop: #4f46e5;
 		color-scheme: light dark;
 	}
 	@media (prefers-color-scheme: dark) {
@@ -105,15 +247,16 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 	main {
-		max-width: 960px;
+		max-width: 1040px;
 		margin: 0 auto;
 		padding: 48px 16px;
 	}
 	header h1 {
-		margin: 0 0 4px;
+		margin: 0 0 8px;
 		font-size: 2rem;
 	}
 	header p {
+		max-width: 640px;
 		margin: 0 0 32px;
 		color: var(--muted);
 	}
@@ -122,23 +265,29 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		padding: 0;
 		margin: 0;
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: 16px;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 20px;
 	}
 	.card {
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		padding: 0 20px 20px;
+		padding: 0 20px 16px;
 		background: var(--card);
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 14px;
+		transition: box-shadow 0.15s, transform 0.15s;
+	}
+	.card:hover {
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+		transform: translateY(-2px);
 	}
 	.card h2 {
 		margin: 0;
 		font-size: 1.25rem;
 	}
 	.cover {
+		position: relative;
 		aspect-ratio: 16 / 10;
 		margin: 0 -20px 16px;
 		display: grid;
@@ -153,6 +302,10 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		object-fit: cover;
 		object-position: top left;
 	}
+	.cover img.pixelated {
+		image-rendering: pixelated;
+		object-position: center;
+	}
 	.cover-icon {
 		width: 112px;
 		height: 112px;
@@ -162,6 +315,26 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		font-size: 4rem;
 		font-weight: 700;
 		color: var(--muted);
+	}
+	.badge {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		padding: 2px 10px;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #fff;
+		box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+	}
+	.badge-web {
+		background: var(--web);
+	}
+	.badge-game {
+		background: var(--game);
+	}
+	.badge-desktop {
+		background: var(--desktop);
 	}
 	.title {
 		display: flex;
@@ -192,36 +365,80 @@ const description = 'Aplicaciones que estoy desarrollando: descargas, webs y có
 		margin: 0 0 12px;
 		flex: 1;
 	}
-	.status {
-		margin: 0 0 12px;
+	.version {
+		margin: 0 0 8px;
 		font-size: 0.85rem;
 		color: var(--muted);
-		font-style: italic;
-	}
-	.actions {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
 	}
 	.btn {
-		padding: 8px 14px;
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		color: var(--fg);
+		display: flex;
+		justify-content: center;
+		align-items: baseline;
+		gap: 8px;
+		padding: 10px 14px;
+		border-radius: 10px;
 		text-decoration: none;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-	.btn:hover {
-		border-color: var(--muted);
+		font-weight: 600;
 	}
 	.btn.primary {
 		background: var(--accent);
-		border-color: var(--accent);
 		color: var(--accent-fg);
 	}
 	.btn.primary:hover {
 		filter: brightness(1.1);
+	}
+	.btn-sub {
+		font-size: 0.8rem;
+		font-weight: 400;
+		opacity: 0.85;
+	}
+	.btn-sub:empty {
+		display: none;
+	}
+	.others {
+		margin-top: 8px;
+		font-size: 0.9rem;
+	}
+	.others summary {
+		cursor: pointer;
+		color: var(--muted);
+		padding: 4px 0;
+	}
+	.others ul {
+		list-style: none;
+		margin: 4px 0 0;
+		padding: 0;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+	}
+	.others li {
+		display: flex;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 8px 12px;
+	}
+	.others li + li {
+		border-top: 1px solid var(--border);
+	}
+	.others li a {
+		color: var(--fg);
+	}
+	.others li span {
+		color: var(--muted);
+		white-space: nowrap;
+	}
+	.source {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		align-self: flex-start;
+		margin-top: 12px;
+		font-size: 0.9rem;
+		color: var(--muted);
+		text-decoration: none;
+	}
+	.source:hover {
+		color: var(--fg);
 	}
 	footer {
 		margin-top: 48px;
