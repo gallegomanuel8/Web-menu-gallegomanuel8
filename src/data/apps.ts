@@ -34,10 +34,10 @@ export const apps: App[] = [
 	{
 		name: 'Invertario',
 		description:
-			'Catálogo de fondos indexados, ETFs y planes de pensiones de plataformas españolas, con simulador de carteras a interés compuesto y seguimiento privado de tu cartera (todo se guarda en el navegador).',
+			'Encuentra el fondo indexado más barato, simula tu cartera y sigue la que ya tienes. Fondos, ETFs, planes de pensiones, cripto y materias primas disponibles en España, con costes reales, comparador e importación de CSV del bróker. Sin registro: tus datos no salen del navegador.',
 		kind: 'web',
 		platforms: ['Web'],
-		tech: 'TypeScript · Vite',
+		tech: 'React · TypeScript',
 		repo: 'gallegomanuel8/Invertario',
 		url: 'https://invertario.vercel.app',
 		icon: invertarioIcon,
